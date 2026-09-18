@@ -169,6 +169,8 @@ install path, tool version tag and hash pinning.
 
 ## Author
 
-Martin Bengtsson
-Blog: [www.imab.dk](https://www.imab.dk)
-X: [@mwbengtsson](https://x.com/mwbengtsson)
+**Martin Bengtsson**
+
+- Blog: [www.imab.dk](https://www.imab.dk)
+- X: [@mwbengtsson](https://x.com/mwbengtsson)
+- LinkedIn: [martin-bengtsson](https://www.linkedin.com/in/martin-bengtsson/)
