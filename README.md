@@ -6,26 +6,16 @@ file or a folder and get a finished `.intunewin` package, without opening a cons
 
 The Microsoft [Win32 Content Prep Tool](https://github.com/microsoft/Microsoft-Win32-Content-Prep-Tool)
 does the packaging. This project handles everything around it: locating the source folder, picking
-the setup file, warning about what is about to be swept into the package, and reading the result
-back so you know what to type into the Intune portal afterwards.
+the setup file, warning about what will be included in the package, and reading the result back so
+you know what to type into the Intune portal afterwards.
 
 ![Package as .intunewin in the Explorer context menu](docs/context-menu.png)
 
-## Why package an MSI at all?
-
-Intune accepts a bare `.msi` as a line-of-business app, but Microsoft recommends the
-[Win32 app type for Windows apps](https://learn.microsoft.com/intune/app-management/deployment/win32),
-and the line-of-business type accepts [only one command-line argument](https://learn.microsoft.com/intune/app-management/deployment/add-lob-windows),
-so a transform plus `/qn` already exceeds it.
-
-What the Win32 route costs you is the Program and Requirements pages. Those are the fields this tool
-fills in for you.
-
 ## What it adds on top of IntuneWinAppUtil.exe
 
-- **No path juggling.** Right-click a setup file and its parent folder becomes the source.
-  Right-click a folder and it is used directly. If it holds several setup files you pick one, and the
-  choice is remembered per folder, so the next version is one click.
+- **Paths resolved from what you clicked.** Right-click a setup file and its parent folder becomes
+  the source. Right-click a folder and it is used directly. If it holds several setup files you pick
+  one, and the choice is remembered per folder, so the next version is one click.
 - **A confirmation before anything is packaged.** Everything in the source folder goes into the
   package, so the prompt shows the file count and size, flags personal and system folders, calls out
   existing `.intunewin` files, and warns past the 30 GB limit Intune enforces.
@@ -40,7 +30,7 @@ fills in for you.
   commands, and a detection rule. For an MSI that carries the product code and product version.
 - **Architecture for the requirement rule.** Read from the installer itself and reported as what to
   select under **Operating system architecture**. A 32-bit installer reports `x86, x64`.
-- **Real silent switches for exe installers.** The wrapper identifies which installer built the exe
+- **Silent switches for exe installers.** The wrapper identifies which installer built the exe
   and reports the switches that installer documents.
 
 | Detected as | Install command | Uninstall |
@@ -52,6 +42,8 @@ fills in for you.
 | 7-Zip installer | `/S` | `Uninstall.exe /S`, path from `UninstallString` |
 | MSI | `msiexec /i "<file>" /qn` | `msiexec /x <ProductCode> /qn` |
 | Unknown | File name only | Check after a test install |
+
+Vendor-specific installers are added as they come up.
 
 ## Requirements
 
