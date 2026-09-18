@@ -162,9 +162,6 @@ install path, tool version tag and hash pinning.
 
 ## Known limits
 
-- One item at a time. Select several files and the entry handles only the first one. This is
-  deliberate: Explorer otherwise starts a separate hidden run for every file selected, and stops
-  showing the entry at all past 15 of them.
 - No submenu. Submenus defined in the registry do not appear in current Explorer builds, at top
   level or under **Show more options**, so each file type gets one flat entry.
 - Detection rules and commands in the handoff JSON are suggestions read from package metadata and
