@@ -39,11 +39,10 @@ you know what to type into the Intune portal afterwards.
 | NSIS | `/S` (case sensitive) | `Uninstall.exe /S`, path from `QuietUninstallString` |
 | Inno Setup | `/VERYSILENT /SUPPRESSMSGBOXES /NORESTART` | `unins000.exe` with the same switches |
 | InstallShield | `/s /v"/qn"` | From `UninstallString` |
-| 7-Zip installer | `/S` | `Uninstall.exe /S`, path from `UninstallString` |
 | MSI | `msiexec /i "<file>" /qn` | `msiexec /x <ProductCode> /qn` |
 | Unknown | File name only | Check after a test install |
 
-Vendor-specific installers are added as they come up.
+Vendor-specific installers are detected too, and added as they come up.
 
 ## Requirements
 
@@ -82,8 +81,6 @@ gets the same checks:
 ```powershell
 .\Install-IntuneWinContextPrep.ps1 -ToolPath 'C:\Approved\IntuneWinAppUtil.exe'
 ```
-
-Use `-ToolVersionTag` for a different tag, or `-ExpectedHash` to pin one exact build.
 
 ## Use it
 
