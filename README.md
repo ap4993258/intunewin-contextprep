@@ -116,9 +116,6 @@ The same values are written to a `.json` file next to the package:
 }
 ```
 
-The setup file is quoted only when its name contains a space, so the commands can be copied straight
-out of the file.
-
 ## Output
 
 Everything is written under `%LOCALAPPDATA%\IntuneWinContextPrep`, under both install scopes, because
