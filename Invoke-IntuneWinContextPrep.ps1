@@ -34,10 +34,12 @@
     Not intended to be run directly. Install-IntuneWinContextPrep.ps1 copies this script next to
     IntuneWinAppUtil.exe and registers the shell verb that calls it.
 
-    Version: 1.2.2
+    Version: 1.3.0
     Updated: 2026-09-18
 
     Changelog:
+    1.3.0 - 2026-09-18 - Added detection for 7-Zip's own installer, which is neither NSIS nor Inno
+                         and was reported as Unknown.
     1.2.2 - 2026-09-18 - Fixed packaging failing for any source path containing a space, because
                          Start-Process joins an argument array without quoting it. Errors now
                          report the packaging tool's own message, which it writes to stdout while
@@ -316,6 +318,19 @@ function Get-InstallerProfile {
             InstallCommand   = "`"$fileName`" /s /v`"/qn`""
             UninstallCommand = 'Read UninstallString from Add/Remove Programs.'
             Notes            = 'Legacy InstallShield uses /s /f1"response.iss" with a recorded response file instead.'
+        }
+    }
+
+    # 7-Zip ships its own installer, identified from the version resource rather than a byte scan so
+    # that an installer merely bundling 7-Zip does not match
+    $versionInfo = (Get-Item -LiteralPath $SetupFile).VersionInfo
+    if ($versionInfo.OriginalFilename -eq '7zipInstall.exe' -or
+        ($versionInfo.CompanyName -eq 'Igor Pavlov' -and $versionInfo.FileDescription -like '*7-Zip Installer*')) {
+        return [ordered]@{
+            InstallerType    = '7-Zip installer'
+            InstallCommand   = "`"$fileName`" /S"
+            UninstallCommand = 'Uninstall.exe /S in the install folder - read UninstallString from Add/Remove Programs for the full path.'
+            Notes            = 'Add /D="C:\Program Files\7-Zip" to set the install folder.'
         }
     }
 

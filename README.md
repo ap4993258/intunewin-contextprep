@@ -9,51 +9,39 @@ does the packaging. This project handles everything around it: locating the sour
 the setup file, warning about what is about to be swept into the package, and reading the result
 back so you know what to type into the Intune portal afterwards.
 
+![Package as .intunewin in the Explorer context menu](docs/context-menu.png)
+
 ## Why package an MSI at all?
 
-Intune accepts a bare `.msi` as a line-of-business app, so wrapping one as a Win32 app looks like
-extra work. Microsoft's guidance runs the other way: use the Win32 app type exclusively for Windows
-apps, [particularly for multi-file installers](https://learn.microsoft.com/intune/app-management/deployment/win32).
+Intune accepts a bare `.msi` as a line-of-business app, but Microsoft recommends the
+[Win32 app type for Windows apps](https://learn.microsoft.com/intune/app-management/deployment/win32),
+and the line-of-business type accepts [only one command-line argument](https://learn.microsoft.com/intune/app-management/deployment/add-lob-windows),
+so a transform plus `/qn` already exceeds it.
 
-The line-of-business type accepts [a single command-line argument](https://learn.microsoft.com/intune/app-management/deployment/add-lob-windows),
-with `/i` and `/x` implied and rejected - so a transform, a property and `/qn` already exceed it. It
-has no requirement rules, no dependencies, no supersedence, no custom return codes, fixed detection,
-and an 8 GB ceiling against the Win32 type's 30 GB. Mixing the two types during Autopilot enrollment
-can also fail, because both compete for the Trusted Installer service.
-
-What the Win32 route costs you is the Program and Requirements pages: install command, uninstall
-command, detection rule, architecture. Those are the fields this tool fills in for you.
+What the Win32 route costs you is the Program and Requirements pages. Those are the fields this tool
+fills in for you.
 
 ## What it adds on top of IntuneWinAppUtil.exe
 
-- **No path juggling.** Right-click the setup file and its parent folder becomes the source folder.
-  Right-click a folder and it is used directly. If a folder holds several setup files you are asked
-  which one, and the answer is remembered per folder, so repackaging after a version bump is one
-  click.
-- **A confirmation before anything is packaged.** Everything in the source folder ends up inside
-  the package. The prompt shows the file count and total size, flags personal and system folders by
-  name, calls out any existing `.intunewin` files that would be bundled back in, and warns when the
-  source exceeds the 30 GB ceiling Intune enforces on a Win32 app.
-- **A path length pre-check.** The packaging tool copies your files through a temp folder first, so
-  deeply nested files can fail there even though they open fine where they are. The paths are
-  measured up front and you are told to move the source folder closer to the drive root, instead of
-  the run failing halfway through.
-- **Output kept away from the source.** Packages land in a timestamped folder under
-  `%LOCALAPPDATA%\IntuneWinContextPrep\Output`, so a second run never wraps the previous package
-  into the next one.
-- **Version in the filename.** The MSI product version, or the exe's file version resource, is
-  appended: `remotehelpinstaller_5.2.1040.0.intunewin`.
-- **Portal handoff.** After packaging, `Detection.xml` is read back out of the package and a `.json`
-  file is written next to it with the publisher, a suggested detection rule, and install and
-  uninstall commands. For an MSI the detection rule carries both the product code and the product
-  version.
-- **Architecture for the requirement rule.** The setup file is read to work out whether it targets
-  x86, x64 or Arm64 - from the PE header for an exe, from the Template summary property for an MSI -
-  and the handoff reports what to select under **Operating system architecture**. A 32-bit installer
-  reports `x86, x64`, since it still installs on 64-bit Windows.
-- **Real silent switches for exe installers.** Rather than emitting a `<silent switch>` placeholder,
-  the wrapper looks inside the exe to work out which installer built it, and reports the switches
-  that installer actually documents.
+- **No path juggling.** Right-click a setup file and its parent folder becomes the source.
+  Right-click a folder and it is used directly. If it holds several setup files you pick one, and the
+  choice is remembered per folder, so the next version is one click.
+- **A confirmation before anything is packaged.** Everything in the source folder goes into the
+  package, so the prompt shows the file count and size, flags personal and system folders, calls out
+  existing `.intunewin` files, and warns past the 30 GB limit Intune enforces.
+- **A path length pre-check.** Deeply nested source files fail inside the packaging tool. You are
+  told up front rather than halfway through.
+- **Output kept away from the source.** Packages land under
+  `%LOCALAPPDATA%\IntuneWinContextPrep\Output`, so a re-run never wraps the previous package into
+  the next one.
+- **Version in the filename.** `remotehelpinstaller_5.2.1040.0.intunewin`, from the MSI product
+  version or the exe's version resource.
+- **Portal handoff.** A `.json` file next to the package with the publisher, install and uninstall
+  commands, and a detection rule. For an MSI that carries the product code and product version.
+- **Architecture for the requirement rule.** Read from the installer itself and reported as what to
+  select under **Operating system architecture**. A 32-bit installer reports `x86, x64`.
+- **Real silent switches for exe installers.** The wrapper identifies which installer built the exe
+  and reports the switches that installer documents.
 
 | Detected as | Install command | Uninstall |
 | --- | --- | --- |
@@ -61,6 +49,7 @@ command, detection rule, architecture. Those are the fields this tool fills in f
 | NSIS | `/S` (case sensitive) | `Uninstall.exe /S`, path from `QuietUninstallString` |
 | Inno Setup | `/VERYSILENT /SUPPRESSMSGBOXES /NORESTART` | `unins000.exe` with the same switches |
 | InstallShield | `/s /v"/qn"` | From `UninstallString` |
+| 7-Zip installer | `/S` | `Uninstall.exe /S`, path from `UninstallString` |
 | MSI | `msiexec /i "<file>" /qn` | `msiexec /x <ProductCode> /qn` |
 | Unknown | File name only | Check after a test install |
 
@@ -81,9 +70,8 @@ Elevated, this installs per machine to `%ProgramFiles%\IntuneWinContextPrep` and
 entry in `HKLM`. Without elevation it installs per user to `%LOCALAPPDATA%\IntuneWinContextPrep` and
 `HKCU`. Force either with `-Scope Machine` or `-Scope User`.
 
-Per-machine is the better default: the files Explorer executes are then writable only by
-administrators, and the menu entry is available to everyone on the box. A per-user install leaves a
-script that Explorer runs automatically in a location the signed-in user can modify.
+Machine scope is the better default: the files Explorer executes stay writable only by
+administrators.
 
 The installer downloads IntuneWinAppUtil.exe, verifies it, copies it and both scripts into the
 install folder, and adds the menu entry for `.exe`, `.msi`, `.msp`, folders, and the background of
@@ -91,23 +79,19 @@ an open folder.
 
 ### Where IntuneWinAppUtil.exe comes from
 
-Microsoft's repository offers no proper downloads page, only the file sitting in the source tree,
-and they have swapped that file for a different build without changing the version number. So the
-installer downloads a specific tagged version, `v1.8.7` by default, and refuses to install it unless
-Windows confirms it is a program signed by Microsoft. Use `-ToolVersionTag` to pick a different one.
+Microsoft publishes the file in their repository's source tree rather than as a release download,
+and has swapped it for a different build without changing the version number. The installer
+therefore pulls a specific tagged version, `v1.8.7` by default, and refuses to install it unless
+Windows confirms it is signed by Microsoft.
 
-Tags can still be moved, so if you want one exact build and nothing else, pass its SHA256:
-
-```powershell
-.\Install-IntuneWinContextPrep.ps1 -ExpectedHash 'C1BA45B5CB939E84AF064BB7FF4B38FB3DFE33C8DC1078FD9B157672EAE671F6'
-```
-
-If downloading is blocked in your environment, point the installer at a copy you have already
-approved. It gets the same checks:
+If downloading is blocked in your environment, install from a copy you have already approved. It
+gets the same checks:
 
 ```powershell
-.\Install-IntuneWinContextPrep.ps1 -ToolPath 'C:\Approved\IntuneWinAppUtil.exe' -ExpectedHash '<sha256>'
+.\Install-IntuneWinContextPrep.ps1 -ToolPath 'C:\Approved\IntuneWinAppUtil.exe'
 ```
+
+Use `-ToolVersionTag` for a different tag, or `-ExpectedHash` to pin one exact build.
 
 ## Use it
 
@@ -118,9 +102,29 @@ Right-click any of the following and choose **Package as .intunewin**. On Window
 - a folder containing one
 - the empty background of an open folder
 
-Confirm the prompt. Explorer opens the output folder when the run finishes, and a dialog reports the
-package path, content and package size, MSI product code, version and execution context where
-available, and the suggested portal values.
+Confirm what is about to be packaged:
+
+![Confirmation before packaging](docs/confirmation.png)
+
+Explorer opens the output folder when it finishes, and the result is reported with the values the
+portal asks for next:
+
+![Completion dialog showing the portal values](docs/done.png)
+
+The same values are written to a `.json` file next to the package:
+
+```json
+{
+    "SetupFile":  "npp.8.9.8.Installer.x64.exe",
+    "Publisher":  "Don HO don.h@free.fr",
+    "InstallerType":  "NSIS",
+    "InstallCommand":  "npp.8.9.8.Installer.x64.exe /S",
+    "UninstallCommand":  "Uninstaller path is known only after install - read QuietUninstallString from Add/Remove Programs.",
+    "DetectionRule":  "File or registry rule - no MSI metadata available",
+    "Notes":  "The NSIS /S switch is case sensitive.",
+    "OSArchitecture":  "x86, x64"
+}
+```
 
 ## Output
 
@@ -130,8 +134,7 @@ Everything is written under `%LOCALAPPDATA%\IntuneWinContextPrep`, under both in
 | Path | Contents |
 | --- | --- |
 | `Output\<setup>_<timestamp>\` | The `.intunewin` package and its `.json` handoff file |
-| `Logs\IntuneWinContextPrep_<timestamp>.log` | Per-run log |
-| `Logs\IntuneWinAppUtil_<timestamp>_std*.log` | Raw output from the packaging tool |
+| `Logs\` | A log per run, plus the packaging tool's own output |
 | `setup-choices.json` | Remembered setup file per source folder |
 
 ## AppLocker and App Control
@@ -162,20 +165,10 @@ unless you ask for them:
 .\Install-IntuneWinContextPrep.ps1 -Action Uninstall -RemoveFiles
 ```
 
-A copy of the installer is placed next to the wrapper during install, so the entry can be removed
-later without the original download.
-
 ## Parameters
 
-| Parameter | Applies to | Description |
-| --- | --- | --- |
-| `-Action` | Both | `Install` or `Uninstall`. Defaults to `Install`. |
-| `-Scope` | Install | `Machine` or `User`. Defaults to `Machine` when elevated. |
-| `-InstallPath` | Both | Target folder. Defaults per scope. On uninstall, only used with `-RemoveFiles`. |
-| `-ToolVersionTag` | Install | Git tag to download IntuneWinAppUtil.exe from. Defaults to `v1.8.7`. |
-| `-ToolPath` | Install | Use an existing local copy instead of downloading. Verified the same way. |
-| `-ExpectedHash` | Install | SHA256 the packaging tool must match. |
-| `-RemoveFiles` | Uninstall | Also delete the install folder and everything in it. |
+`Get-Help .\Install-IntuneWinContextPrep.ps1 -Full` documents every parameter, including scope,
+install path, tool version tag and hash pinning.
 
 ## Known limits
 
@@ -186,13 +179,6 @@ later without the original download.
   level or under **Show more options**, so each file type gets one flat entry.
 - Detection rules and commands in the handoff JSON are suggestions read from package metadata and
   installer fingerprints. Check them against vendor documentation before deploying.
-
-## Files
-
-| File | Purpose |
-| --- | --- |
-| `Install-IntuneWinContextPrep.ps1` | Installs and uninstalls the context menu entry |
-| `Invoke-IntuneWinContextPrep.ps1` | Packaging wrapper called by the menu entry. Not meant to be run directly |
 
 ## Author
 

@@ -74,10 +74,11 @@
 .NOTES
     Installing requires .NET Framework 4.7.2 or later, which IntuneWinAppUtil.exe depends on.
 
-    Version: 1.2.2
+    Version: 1.3.0
     Updated: 2026-09-18
 
     Changelog:
+    1.3.0 - 2026-09-18 - No change in this script; version kept in step with the wrapper.
     1.2.2 - 2026-09-18 - No change in this script; version kept in step with the wrapper.
     1.2.1 - 2026-09-18 - No change in this script; version kept in step with the wrapper.
     1.2.0 - 2026-09-18 - No change in this script; version kept in step with the wrapper.
