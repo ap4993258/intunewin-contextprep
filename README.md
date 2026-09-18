@@ -115,16 +115,20 @@ The same values are written to a `.json` file next to the package:
 
 ```json
 {
-    "SetupFile":  "npp.8.9.8.Installer.x64.exe",
-    "Publisher":  "Don HO don.h@free.fr",
-    "InstallerType":  "NSIS",
-    "InstallCommand":  "npp.8.9.8.Installer.x64.exe /S",
-    "UninstallCommand":  "Uninstaller path is known only after install - read QuietUninstallString from Add/Remove Programs.",
+    "Package":  "C:\\Users\\<you>\\AppData\\Local\\IntuneWinContextPrep\\Output\\7z2603-x64_20260918_162715\\7z2603-x64_26.03.intunewin",
+    "SetupFile":  "7z2603-x64.exe",
+    "Publisher":  "Igor Pavlov",
+    "InstallerType":  "7-Zip installer",
+    "InstallCommand":  "7z2603-x64.exe /S",
+    "UninstallCommand":  "Uninstall.exe /S in the install folder - read UninstallString from Add/Remove Programs for the full path.",
     "DetectionRule":  "File or registry rule - no MSI metadata available",
-    "Notes":  "The NSIS /S switch is case sensitive.",
-    "OSArchitecture":  "x86, x64"
+    "Notes":  "Add /D=\"C:\\Program Files\\7-Zip\" to set the install folder.",
+    "OSArchitecture":  "x64"
 }
 ```
+
+The setup file is quoted only when its name contains a space, so the commands can be copied straight
+out of the file.
 
 ## Output
 

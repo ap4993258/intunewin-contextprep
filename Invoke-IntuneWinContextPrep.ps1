@@ -34,10 +34,13 @@
     Not intended to be run directly. Install-IntuneWinContextPrep.ps1 copies this script next to
     IntuneWinAppUtil.exe and registers the shell verb that calls it.
 
-    Version: 1.3.0
+    Version: 1.3.1
     Updated: 2026-09-18
 
     Changelog:
+    1.3.1 - 2026-09-18 - Suggested commands now quote the setup file only when its name contains a
+                         space, so the handoff file no longer carries JSON escapes around a name
+                         that never needed quoting.
     1.3.0 - 2026-09-18 - Added detection for 7-Zip's own installer, which is neither NSIS nor Inno
                          and was reported as Unknown.
     1.2.2 - 2026-09-18 - Fixed packaging failing for any source path containing a space, because
@@ -280,26 +283,35 @@ function Get-ArchitectureRequirement {
     }
 }
 
+# quoting only when the name needs it keeps the handoff file free of JSON escapes, so a command can
+# be pasted straight out of it
+function Format-CommandPath {
+    param([string]$FileName)
+
+    if ($FileName -match '\s') { "`"$FileName`"" } else { $FileName }
+}
+
 # an exe carries no metadata the way an MSI does, so identify the installer technology instead and
 # emit the switches that technology actually documents
 function Get-InstallerProfile {
     param([string]$SetupFile)
 
     $fileName = Split-Path -Leaf $SetupFile
+    $command = Format-CommandPath $fileName
     $sections = Get-PESectionNames -LiteralPath $SetupFile
 
     if ($sections -contains '.wixburn') {
         return [ordered]@{
             InstallerType    = 'WiX Burn bundle'
-            InstallCommand   = "`"$fileName`" /quiet /norestart"
-            UninstallCommand = "`"$fileName`" /uninstall /quiet /norestart"
+            InstallCommand   = "$command /quiet /norestart"
+            UninstallCommand = "$command /uninstall /quiet /norestart"
             Notes            = 'Burn bundles also register a QuietUninstallString in Add/Remove Programs.'
         }
     }
     if ($sections -contains '.ndata' -or (Test-FileMarker -LiteralPath $SetupFile -Pattern 'Nullsoft')) {
         return [ordered]@{
             InstallerType    = 'NSIS'
-            InstallCommand   = "`"$fileName`" /S"
+            InstallCommand   = "$command /S"
             UninstallCommand = 'Uninstaller path is known only after install - read QuietUninstallString from Add/Remove Programs. Typically Uninstall.exe /S in the install folder.'
             Notes            = 'The NSIS /S switch is case sensitive.'
         }
@@ -307,7 +319,7 @@ function Get-InstallerProfile {
     if (Test-FileMarker -LiteralPath $SetupFile -Pattern 'Inno Setup') {
         return [ordered]@{
             InstallerType    = 'Inno Setup'
-            InstallCommand   = "`"$fileName`" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART"
+            InstallCommand   = "$command /VERYSILENT /SUPPRESSMSGBOXES /NORESTART"
             UninstallCommand = 'unins000.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART in the install folder - read UninstallString from Add/Remove Programs for the full path.'
             Notes            = 'Add /SP- to skip the "This will install..." prompt.'
         }
@@ -315,7 +327,7 @@ function Get-InstallerProfile {
     if (Test-FileMarker -LiteralPath $SetupFile -Pattern 'InstallShield') {
         return [ordered]@{
             InstallerType    = 'InstallShield'
-            InstallCommand   = "`"$fileName`" /s /v`"/qn`""
+            InstallCommand   = "$command /s /v`"/qn`""
             UninstallCommand = 'Read UninstallString from Add/Remove Programs.'
             Notes            = 'Legacy InstallShield uses /s /f1"response.iss" with a recorded response file instead.'
         }
@@ -328,7 +340,7 @@ function Get-InstallerProfile {
         ($versionInfo.CompanyName -eq 'Igor Pavlov' -and $versionInfo.FileDescription -like '*7-Zip Installer*')) {
         return [ordered]@{
             InstallerType    = '7-Zip installer'
-            InstallCommand   = "`"$fileName`" /S"
+            InstallCommand   = "$command /S"
             UninstallCommand = 'Uninstall.exe /S in the install folder - read UninstallString from Add/Remove Programs for the full path.'
             Notes            = 'Add /D="C:\Program Files\7-Zip" to set the install folder.'
         }
@@ -336,7 +348,7 @@ function Get-InstallerProfile {
 
     [ordered]@{
         InstallerType    = 'Unknown'
-        InstallCommand   = "`"$fileName`""
+        InstallCommand   = $command
         UninstallCommand = 'Read UninstallString from Add/Remove Programs after a test install.'
         Notes            = 'No installer technology detected - check the vendor documentation for the silent switch.'
     }
@@ -356,7 +368,7 @@ function Get-PortalHandoff {
     switch ([System.IO.Path]::GetExtension($setupFileName).ToLowerInvariant()) {
         '.msi' {
             $handoff['InstallerType'] = 'Windows Installer'
-            $handoff['InstallCommand'] = "msiexec /i `"$setupFileName`" /qn"
+            $handoff['InstallCommand'] = "msiexec /i $(Format-CommandPath $setupFileName) /qn"
             if ($AppInfo -and $AppInfo.MsiInfo) {
                 $handoff['UninstallCommand'] = "msiexec /x $($AppInfo.MsiInfo.MsiProductCode) /qn"
                 $handoff['DetectionRule'] = "MSI product code $($AppInfo.MsiInfo.MsiProductCode), product version $($AppInfo.MsiInfo.MsiProductVersion)"
@@ -366,7 +378,7 @@ function Get-PortalHandoff {
         }
         '.msp' {
             $handoff['InstallerType'] = 'Windows Installer patch'
-            $handoff['InstallCommand'] = "msiexec /p `"$setupFileName`" /qn"
+            $handoff['InstallCommand'] = "msiexec /p $(Format-CommandPath $setupFileName) /qn"
             $handoff['UninstallCommand'] = 'Patches cannot be removed with msiexec /x - set manually'
             $handoff['DetectionRule'] = 'File or registry rule - patches expose no product code'
             $architecture = $null
