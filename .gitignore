@@ -1,0 +1,14 @@
+# Packages and logs, in case anything is generated inside the repo folder
+*.intunewin
+*.log
+
+# The packaging tool is downloaded by the installer, never committed
+IntuneWinAppUtil.exe
+
+# Signed copies produced during release
+*.ps1.bak
+
+# Windows and editor noise
+Thumbs.db
+desktop.ini
+.vscode/
