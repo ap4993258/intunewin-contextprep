@@ -1,4 +1,4 @@
-# IntuneWin ContextPrep
+# IntuneWinContextPrep
 
 Adds a **Package as .intunewin** entry to the Windows Explorer context menu. Right-click a setup
 file or a folder and get a finished `.intunewin` package, without opening a console and typing out
