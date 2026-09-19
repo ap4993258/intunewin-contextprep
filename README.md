@@ -77,13 +77,6 @@ for folders, and for the background of an open folder.
 The installer downloads it from a pinned tag in Microsoft's repository, `v1.8.7` by default, and
 refuses to install it unless Windows confirms the file is signed by Microsoft.
 
-If downloading is blocked in your environment, install from a copy you have already approved. It
-gets the same checks:
-
-```powershell
-.\Install-IntuneWinContextPrep.ps1 -ToolPath 'C:\Approved\IntuneWinAppUtil.exe'
-```
-
 ## Use it
 
 Right-click any of the following and choose **Package as .intunewin**. On Windows 11 it sits under
