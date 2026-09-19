@@ -40,6 +40,8 @@ you know what to type into the Intune portal afterwards.
 | Inno Setup | `/VERYSILENT /SUPPRESSMSGBOXES /NORESTART` | `unins000.exe` with the same switches |
 | InstallShield | `/s /v"/qn"` | From `UninstallString` |
 | MSI | `msiexec /i "<file>" /qn` | `msiexec /x <ProductCode> /qn` |
+| PowerShell script | `powershell.exe -ExecutionPolicy Bypass -File <file>` | Supply your own |
+| `.cmd` or `.bat` | File name only | Supply your own |
 | Unknown | File name only | Check after a test install |
 
 Vendor-specific installers are detected too, and added as they come up.
@@ -53,6 +55,8 @@ Vendor-specific installers are detected too, and added as they come up.
 
 ## Install
 
+Download both scripts and keep them in the same folder, then run:
+
 ```powershell
 .\Install-IntuneWinContextPrep.ps1
 ```
@@ -65,15 +69,13 @@ Machine scope is the better default: the files Explorer executes stay writable o
 administrators.
 
 The installer downloads IntuneWinAppUtil.exe, verifies it, copies it and both scripts into the
-install folder, and adds the menu entry for `.exe`, `.msi`, `.msp`, folders, and the background of
-an open folder.
+install folder, and adds the menu entry for `.exe`, `.msi`, `.msp`, `.ps1`, `.cmd` and `.bat` files,
+for folders, and for the background of an open folder.
 
 ### Where IntuneWinAppUtil.exe comes from
 
-Microsoft publishes the file in their repository's source tree rather than as a release download,
-and has swapped it for a different build without changing the version number. The installer
-therefore pulls a specific tagged version, `v1.8.7` by default, and refuses to install it unless
-Windows confirms it is signed by Microsoft.
+The installer downloads it from a pinned tag in Microsoft's repository, `v1.8.7` by default, and
+refuses to install it unless Windows confirms the file is signed by Microsoft.
 
 If downloading is blocked in your environment, install from a copy you have already approved. It
 gets the same checks:
@@ -87,7 +89,7 @@ gets the same checks:
 Right-click any of the following and choose **Package as .intunewin**. On Windows 11 it sits under
 **Show more options**.
 
-- an `.exe`, `.msi` or `.msp` file
+- an `.exe`, `.msi`, `.msp`, `.ps1`, `.cmd` or `.bat` file
 - a folder containing one
 - the empty background of an open folder
 

@@ -34,10 +34,13 @@
     Not intended to be run directly. Install-IntuneWinContextPrep.ps1 copies this script next to
     IntuneWinAppUtil.exe and registers the shell verb that calls it.
 
-    Version: 1.3.1
-    Updated: 2026-09-18
+    Version: 1.4.1
+    Updated: 2026-09-19
 
     Changelog:
+    1.4.1 - 2026-09-19 - No change in this script; version kept in step with the installer.
+    1.4.0 - 2026-09-19 - Added .ps1, .cmd and .bat as setup files, with install commands suited to
+                         each.
     1.3.1 - 2026-09-18 - Suggested commands now quote the setup file only when its name contains a
                          space, so the handoff file no longer carries JSON escapes around a name
                          that never needed quoting.
@@ -76,7 +79,7 @@ if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir -Forc
 $timestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
 $logFile = Join-Path $logDir "IntuneWinContextPrep_$timestamp.log"
 $choicesFile = Join-Path $dataRoot 'setup-choices.json'
-$setupExtensions = @('.exe', '.msi', '.msp')
+$setupExtensions = @('.exe', '.msi', '.msp', '.ps1', '.cmd', '.bat')
 # Intune rejects a Win32 app larger than this
 $maxAppBytes = 30GB
 
@@ -381,6 +384,21 @@ function Get-PortalHandoff {
             $handoff['InstallCommand'] = "msiexec /p $(Format-CommandPath $setupFileName) /qn"
             $handoff['UninstallCommand'] = 'Patches cannot be removed with msiexec /x - set manually'
             $handoff['DetectionRule'] = 'File or registry rule - patches expose no product code'
+            $architecture = $null
+        }
+        '.ps1' {
+            $handoff['InstallerType'] = 'PowerShell script'
+            $handoff['InstallCommand'] = "powershell.exe -ExecutionPolicy Bypass -File $(Format-CommandPath $setupFileName)"
+            $handoff['UninstallCommand'] = 'Supply an uninstall script or command.'
+            $handoff['DetectionRule'] = 'File, registry or script rule - a script exposes no metadata'
+            $handoff['Notes'] = 'Intune can also take a PowerShell script as the installer directly, instead of a command line.'
+            $architecture = $null
+        }
+        { $_ -in '.cmd', '.bat' } {
+            $handoff['InstallerType'] = 'Script'
+            $handoff['InstallCommand'] = Format-CommandPath $setupFileName
+            $handoff['UninstallCommand'] = 'Supply an uninstall script or command.'
+            $handoff['DetectionRule'] = 'File, registry or script rule - a script exposes no metadata'
             $architecture = $null
         }
         default {

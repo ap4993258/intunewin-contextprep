@@ -5,8 +5,8 @@
 .DESCRIPTION
     Install downloads the Microsoft Win32 Content Prep Tool (IntuneWinAppUtil.exe), verifies that it
     is signed by Microsoft, and adds a 'Package as .intunewin' entry to the context menu for .exe,
-    .msi and .msp files, for folders, and for the background of an open folder. Uninstall removes it
-    again.
+    .msi, .msp, .ps1, .cmd and .bat files, for folders, and for the background of an open folder.
+    Uninstall removes it again.
 
     Machine scope is the better choice wherever you can elevate: the files Explorer executes are
     then writable only by administrators, and the entry is available to every user on the machine.
@@ -74,10 +74,20 @@
 .NOTES
     Installing requires .NET Framework 4.7.2 or later, which IntuneWinAppUtil.exe depends on.
 
-    Version: 1.3.1
-    Updated: 2026-09-18
+    Both scripts must sit in the same folder. The installer copies the wrapper next to
+    IntuneWinAppUtil.exe in the install folder.
+
+    Version: 1.4.1
+    Updated: 2026-09-19
 
     Changelog:
+    1.4.1 - 2026-09-19 - Fail up front with an explanation when Invoke-IntuneWinContextPrep.ps1 is
+                         missing from the same folder. The Copy-Item error it produced previously
+                         read as though this script referenced the wrong file name. Unknown
+                         parameters are now rejected instead of being silently ignored.
+    1.4.0 - 2026-09-19 - Added .ps1, .cmd and .bat as setup files. Registered under
+                         SystemFileAssociations so the entry survives a user changing which
+                         application opens those types.
     1.3.1 - 2026-09-18 - No change in this script; version kept in step with the wrapper.
     1.3.0 - 2026-09-18 - No change in this script; version kept in step with the wrapper.
     1.2.2 - 2026-09-18 - No change in this script; version kept in step with the wrapper.
@@ -91,6 +101,7 @@
     Blog:   www.imab.dk
     X:      @mwbengtsson
 #>
+[CmdletBinding()]
 param(
     [ValidateSet('Install', 'Uninstall')]
     [string]$Action = 'Install',
@@ -122,10 +133,15 @@ $verbKey = $appName
 # One flat verb per class rather than a submenu: registry-based cascading submenus
 # (ExtendedSubCommandsKey) don't render in this Explorer build, top-level or under "Show more
 # options".
+# Script types go under SystemFileAssociations rather than their ProgID, so the entry survives a
+# user changing which application opens .ps1, .cmd or .bat.
 $shellTargets = @(
     @{ Class = 'exefile'; PathToken = '%1'; MultiSelectModel = 'Single' },
     @{ Class = 'Msi.Package'; PathToken = '%1'; MultiSelectModel = 'Single' },
     @{ Class = 'Msi.Patch'; PathToken = '%1'; MultiSelectModel = 'Single' },
+    @{ Class = 'SystemFileAssociations\.ps1'; PathToken = '%1'; MultiSelectModel = 'Single' },
+    @{ Class = 'SystemFileAssociations\.cmd'; PathToken = '%1'; MultiSelectModel = 'Single' },
+    @{ Class = 'SystemFileAssociations\.bat'; PathToken = '%1'; MultiSelectModel = 'Single' },
     @{ Class = 'Directory'; PathToken = '%1'; MultiSelectModel = 'Single' },
     @{ Class = 'Directory\Background'; PathToken = '%V'; MultiSelectModel = $null }
 )
@@ -140,8 +156,7 @@ $machineRoot = Join-Path $env:ProgramFiles $appName
 $powerShellExe = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
 $iconSource = "$powerShellExe,0"
 
-# the repo ships no binary release assets and has replaced the exe on master in place before
-# (1.8.7 first shipped a build that failed strong-name validation), so pin to a tag
+# pinned to a tag rather than master, so a given install always gets the same binary
 $toolDownloadUrl = "https://raw.githubusercontent.com/microsoft/Microsoft-Win32-Content-Prep-Tool/$ToolVersionTag/IntuneWinAppUtil.exe"
 
 function Assert-MicrosoftSignedExecutable {
@@ -214,6 +229,13 @@ if ($Action -eq 'Uninstall') {
     return
 }
 
+# checked before anything is downloaded, because the error Copy-Item raises later reads as though
+# this script references the wrong file name
+$wrapperSource = Join-Path $PSScriptRoot 'Invoke-IntuneWinContextPrep.ps1'
+if (-not (Test-Path -LiteralPath $wrapperSource)) {
+    throw "Invoke-IntuneWinContextPrep.ps1 was not found in $PSScriptRoot. Both scripts are required and must sit in the same folder. Download them from https://github.com/imabdk/intunewin-contextprep"
+}
+
 if ($Scope -eq 'Machine' -and -not $isElevated) {
     throw 'Machine scope writes to %ProgramFiles% and HKLM. Re-run this script elevated, or use -Scope User.'
 }
@@ -271,7 +293,6 @@ finally {
     }
 }
 
-$wrapperSource = Join-Path $PSScriptRoot 'Invoke-IntuneWinContextPrep.ps1'
 $wrapperPath = Join-Path $InstallPath 'Invoke-IntuneWinContextPrep.ps1'
 # re-running from the installed copy would otherwise copy both files onto themselves
 if ($wrapperSource -ne $wrapperPath) {
@@ -304,5 +325,5 @@ foreach ($target in $shellTargets) {
 }
 
 Write-Host "Installed ($Scope scope) to $InstallPath. Packages and logs go to $dataRoot."
-Write-Host "Right-click an .exe, .msi, .msp, a folder, or the background of an open folder and choose 'Package as .intunewin'."
+Write-Host "Right-click an .exe, .msi, .msp, .ps1, .cmd or .bat file, a folder, or the background of an open folder and choose 'Package as .intunewin'."
 Write-Host "Uninstall with: `"$installedScriptPath`" -Action Uninstall"
