@@ -9,6 +9,11 @@ does the packaging. This project handles everything around it: locating the sour
 the setup file, warning about what will be included in the package, and reading the result back so
 you know what to type into the Intune portal afterwards.
 
+Most organizations run a third-party patch management solution for apps that update constantly, and
+packaging those manually every release isn't worth it. But in-house apps aren't in any patch
+management catalog, smaller shops don't always have one, and there's always the one-off - testing a
+version, troubleshooting a failed install, packaging something for a pilot group. This is for that.
+
 ![Package as .intunewin in the Explorer context menu](docs/context-menu.png)
 
 ## What it adds on top of IntuneWinAppUtil.exe
