@@ -24,8 +24,6 @@ version, troubleshooting a failed install, packaging something for a pilot group
 - **A confirmation before anything is packaged.** Everything in the source folder goes into the
   package, so the prompt shows the file count and size, flags personal and system folders, calls out
   existing `.intunewin` files, and warns past the 30 GB limit Intune enforces.
-- **A path length pre-check.** Deeply nested source files fail inside the packaging tool. You are
-  told up front rather than halfway through.
 - **Output kept away from the source.** Packages land under
   `%LOCALAPPDATA%\IntuneWinContextPrep\Output`, so a re-run never wraps the previous package into
   the next one.
@@ -49,8 +47,6 @@ version, troubleshooting a failed install, packaging something for a pilot group
 | `.cmd` or `.bat` | File name only | Supply your own |
 | Unknown | File name only | Check after a test install |
 
-Vendor-specific installers are detected too, and added as they come up.
-
 ## Requirements
 
 - Windows PowerShell 5.1
@@ -69,9 +65,6 @@ Download both scripts and keep them in the same folder, then run:
 Elevated, this installs per machine to `%ProgramFiles%\IntuneWinContextPrep` and registers the menu
 entry in `HKLM`. Without elevation it installs per user to `%LOCALAPPDATA%\IntuneWinContextPrep` and
 `HKCU`. Force either with `-Scope Machine` or `-Scope User`.
-
-Machine scope is the better default: the files Explorer executes stay writable only by
-administrators.
 
 The installer downloads IntuneWinAppUtil.exe, verifies it, copies it and both scripts into the
 install folder, and adds the menu entry for `.exe`, `.msi`, `.msp`, `.ps1`, `.cmd` and `.bat` files,
@@ -159,13 +152,6 @@ unless you ask for them:
 
 `Get-Help .\Install-IntuneWinContextPrep.ps1 -Full` documents every parameter, including scope,
 install path, tool version tag and hash pinning.
-
-## Known limits
-
-- No submenu. Submenus defined in the registry do not appear in current Explorer builds, at top
-  level or under **Show more options**, so each file type gets one flat entry.
-- Detection rules and commands in the handoff JSON are suggestions read from package metadata and
-  installer fingerprints. Check them against vendor documentation before deploying.
 
 ## Author
 
