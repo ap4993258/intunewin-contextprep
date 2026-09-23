@@ -5,9 +5,7 @@ file or a folder and get a finished `.intunewin` package, without opening a cons
 `-c`, `-s` and `-o` paths for IntuneWinAppUtil.exe.
 
 The Microsoft [Win32 Content Prep Tool](https://github.com/microsoft/Microsoft-Win32-Content-Prep-Tool)
-does the packaging. This project handles everything around it: locating the source folder, picking
-the setup file, warning about what will be included in the package, and reading the result back so
-you know what to type into the Intune portal afterwards.
+does the packaging. This project handles everything around it.
 
 Most organizations run a third-party patch management solution for apps that update regularly, and
 packaging those manually every release isn't worth it. But in-house apps aren't in any patch
